@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Team Builder</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <style>
+    :root { --accent: #e60012; }
+    body { background: #f8f9fa; }
+    .navbar-custom { background: var(--accent); }
+    .navbar-custom .navbar-brand, .navbar-custom .nav-link, .navbar-custom .navbar-text { color: #fff; }
+    .name-box { background: #fff; border-radius: 999px; padding: .35rem .6rem; }
+    .poke-card { cursor: pointer; background: #fff; border: 2px solid transparent; border-radius: .75rem; transition: transform .1s ease, box-shadow .1s ease, border-color .1s ease; }
+    .poke-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+    .poke-card img { width: 100%; height: 96px; object-fit: contain; }
+    .poke-card.available { border-color: #e9ecef; }
+    .poke-card.mine { border-color: #198754; box-shadow: 0 0 0 4px rgba(25,135,84,.15); }
+    .poke-card.taken { border-color: #dc3545; opacity: .7; pointer-events: none; }
+    body.lock main { filter: blur(2px); pointer-events: none; user-select: none; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-custom shadow-sm sticky-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" width="24" height="24" alt="pokéball" />
+        Pokémon Team Builder
+      </a>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <a href="admin.html" id="gotoAdmin" class="btn btn-outline-light btn-sm">Admin</a>
+        <span class="navbar-text d-none d-md-inline">Jouw naam:</span>
+        <form id="nameForm" class="d-flex align-items-center gap-2" autocomplete="off">
+          <div class="name-box d-flex align-items-center gap-2">
+            <input id="username" class="form-control form-control-sm border-0" type="text" placeholder="voer je naam in" required />
+          </div>
+          <button class="btn btn-light btn-sm fw-semibold" type="submit">Opslaan</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <h2 class="h5 mb-3">Pokémon selectie</h2>
+        <div class="row" id="grid"></div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <h5 class="card-title d-flex justify-content-between align-items-center">
+              Dashboard
+              <span class="badge text-bg-secondary" id="selectedCount">0</span>
+            </h5>
+            <p class="text-muted small mb-2" id="currentUserText">Niet ingelogd.</p>
+            <div id="selectedList" class="d-flex flex-wrap gap-2"></div>
+            <hr>
+            <div class="d-flex gap-2">
+              <button id="saveTeam" class="btn btn-success btn-sm">Team opslaan</button>
+              <button id="clearMine" class="btn btn-outline-danger btn-sm">Leegmaken</button>
+            </div>
+          </div>
+        </div>
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">Opgeslagen teams</h5>
+            <div id="savedTeams" class="vstack gap-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Startscherm -->
+  <div class="modal fade" id="startModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Welkom! Kies je naam</h5></div>
+        <div class="modal-body">
+          <form id="startForm" class="vstack gap-2">
+            <input id="startName" type="text" class="form-control" placeholder="Jouw naam" required />
+            <button class="btn btn-primary" type="submit">Doorgaan</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const USERS_KEY = 'ptb_users';
+    const CURRENT_USER_KEY = 'ptb_current_user';
+    const CLAIMS_KEY = 'ptb_claims';
+    const TEAMS_KEY = 'ptb_teams';
+    const ADMIN_KEY = 'ptb_admin';
+    const ADMIN_CODE = 'SHAMUS117';
+    const MAX_TEAM = 10;
+
+    // ---- Volgorde: Gen 1 + extra (inclusief Eeveelutions ná Flareon) ----
+    const art = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+    const BASE_GEN1 = Array.from({length:151}, (_,i)=>i+1);
+    const EXTRA_INSERTS = [
+      { id: 172, position: 'before', ref: 25 },  // Pichu vóór Pikachu
+      { id: 979, position: 'after',  ref: 57 },  // Annihilape na Primeape
+      { id: 242, position: 'after',  ref: 113 }, // Blissey na Chansey
+
+      // Eeveelutions na Flareon (136)
+      { id: 196, position: 'after', ref: 136 }, // Espeon
+      { id: 197, position: 'after', ref: 196 }, // Umbreon
+      { id: 470, position: 'after', ref: 197 }, // Leafeon
+      { id: 471, position: 'after', ref: 470 }, // Glaceon
+      { id: 700, position: 'after', ref: 471 }, // Sylveon
+
+      { id: 464, position: 'after', ref: 112 }, // Rhyperior na Rhydon
+      { id: 467, position: 'after', ref: 126 }, // Magmortar na Magmar
+      { id: 465, position: 'after', ref: 114 }, // Tangrowth na Tangela
+      { id: 208, position: 'after', ref: 95  }, // Steelix na Onix
+      { id: 174, position: 'before', ref: 39  }, // Igglybuff vóór Jigglypuff
+      { id: 238, position: 'before', ref: 124 }, // Smoochum vóór Jynx
+      { id: 240, position: 'before', ref: 126 }, // Magby vóór Magmar
+      { id: 239, position: 'before', ref: 125 }, // Elekid vóór Electabuzz
+      { id: 466, position: 'after',  ref: 125 }, // Electivire na Electabuzz
+      { id: 230, position: 'after',  ref: 117 }, // Kingdra na Seadra
+      { id: 439, position: 'before', ref: 122 }, // Mime Jr. vóór Mr. Mime
+      { id: 212, position: 'after',  ref: 123 }, // Scizor na Scyther
+      { id: 900, position: 'after',  ref: 212 }, // Kleavor na Scizor
+      { id: 440, position: 'before', ref: 113 }, // Happiny vóór Chansey
+      { id: 446, position: 'before', ref: 143 }, // Munchlax vóór Snorlax
+      { id: 236, position: 'before', ref: 106 }, // Tyrogue vóór Hitmonlee
+      { id: 237, position: 'after',  ref: 107 }, // Hitmontop na Hitmonchan
+      { id: 169, position: 'after',  ref: 42  }, // Crobat na Golbat
+
+    ];
+    const GEN1 = (() => {
+      const order = [...BASE_GEN1];
+      EXTRA_INSERTS.forEach(({id, position, ref}) => {
+        const idx = order.indexOf(ref);
+        if (idx === -1) return;
+        order.splice(position === 'before' ? idx : idx + 1, 0, id);
+      });
+      return order;
+    })();
+
+    // ---- App state / helpers ----
+    const normalize = s => (s ?? '').toString().trim().toLowerCase();
+    const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+    const state = {
+      users: JSON.parse(localStorage.getItem(USERS_KEY) || '[]'),
+      currentUser: localStorage.getItem(CURRENT_USER_KEY) || '',
+      claims: JSON.parse(localStorage.getItem(CLAIMS_KEY) || '{}'),
+      teams: JSON.parse(localStorage.getItem(TEAMS_KEY) || '[]'),
+    };
+
+    function registerName(name){
+      const clean = (name || '').trim();
+      if (!clean) return false;
+      if (!state.users.some(u=>normalize(u)===normalize(clean))){
+        state.users.push(clean); save(USERS_KEY, state.users);
+      }
+      state.currentUser = clean;
+      localStorage.setItem(CURRENT_USER_KEY, clean);
+      return true;
+    }
+    function refreshFromStorage(){
+      state.claims = JSON.parse(localStorage.getItem(CLAIMS_KEY) || '{}');
+      state.teams  = JSON.parse(localStorage.getItem(TEAMS_KEY) || '[]');
+    }
+    function getMy(){
+      return Object.keys(state.claims)
+        .filter(id => normalize(state.claims[id]) === normalize(state.currentUser))
+        .map(Number);
+    }
+
+    // ---- UI render ----
+    function renderGrid(){
+      const grid = document.getElementById('grid'); grid.innerHTML='';
+      GEN1.forEach(id => {
+        const claimedBy = state.claims[id];
+        const isMine = claimedBy && normalize(claimedBy) === normalize(state.currentUser);
+        const isTaken = claimedBy && !isMine;
+
+        const col = document.createElement('div'); col.className = 'col-6 col-sm-4 col-md-3 mb-3';
+        const card = document.createElement('div'); card.className = 'poke-card text-center p-2 ' + (isTaken ? 'taken' : (isMine ? 'mine' : 'available'));
+
+        const img = document.createElement('img'); img.src = art(id); img.alt = `#${String(id).padStart(3,'0')}`;
+        const txt = document.createElement('div'); txt.textContent = `#${String(id).padStart(3,'0')}`;
+
+        card.append(img, txt); col.appendChild(card); grid.appendChild(col);
+
+        if (!isTaken){
+          card.addEventListener('click', () => {
+            if(!state.currentUser){
+              new bootstrap.Modal(document.getElementById('startModal')).show();
+              return;
+            }
+            toggle(id);
+          });
+        }
+      });
+      renderDash();
+    }
+
+    function toggle(id){
+      const claim = state.claims[id];
+      if (claim && normalize(claim) !== normalize(state.currentUser)) return;
+      if (claim) delete state.claims[id];
+      else{
+        if (getMy().length >= MAX_TEAM){ alert('Max 10 in je team'); return; }
+        state.claims[id] = state.currentUser;
+      }
+      save(CLAIMS_KEY, state.claims);
+      localStorage.setItem('ptb_ping', String(Date.now()));
+      renderGrid();
+    }
+
+    function renderDash(){
+      const mine = getMy();
+      document.getElementById('selectedCount').textContent = mine.length;
+      document.getElementById('currentUserText').textContent = state.currentUser ? `Ingelogd als: ${state.currentUser}` : 'Niet ingelogd.';
+      const list = document.getElementById('selectedList'); list.innerHTML='';
+      mine.forEach(id=>{ const img=document.createElement('img'); img.src=art(id); img.width=48; img.height=48; img.className='me-1'; list.appendChild(img); });
+      renderSaved();
+    }
+
+    function renderSaved(){
+      const root = document.getElementById('savedTeams'); root.innerHTML='';
+      const sorted = [...state.teams].sort((a,b)=>b.savedAt-a.savedAt);
+      sorted.forEach(t=>{
+        const row=document.createElement('div'); row.className='border rounded p-2';
+        const title=document.createElement('div'); title.className='fw-semibold mb-1'; title.textContent=t.user; row.appendChild(title);
+        t.team.forEach(id=>{ const img=document.createElement('img'); img.src=art(id); img.width=36; img.height=36; img.className='me-1'; row.appendChild(img); });
+        root.appendChild(row);
+      });
+    }
+
+    // ---- Events ----
+    document.getElementById('saveTeam').onclick = () => {
+      if(!state.currentUser){ new bootstrap.Modal(document.getElementById('startModal')).show(); return; }
+      const mine = getMy(); if(!mine.length) return alert('Geen Pokémon gekozen');
+      const idx = state.teams.findIndex(t=>normalize(t.user)===normalize(state.currentUser));
+      const entry = { user: state.currentUser, team: mine, savedAt: Date.now() };
+      if(idx>=0) state.teams[idx]=entry; else state.teams.push(entry);
+      save(TEAMS_KEY, state.teams);
+      localStorage.setItem('ptb_ping', String(Date.now()));
+      renderSaved();
+    };
+
+    document.getElementById('clearMine').onclick = () => {
+      Object.keys(state.claims).forEach(id=>{ if(normalize(state.claims[id])===normalize(state.currentUser)) delete state.claims[id]; });
+      save(CLAIMS_KEY, state.claims);
+      localStorage.setItem('ptb_ping', String(Date.now()));
+      renderGrid();
+    };
+
+    document.getElementById('nameForm').onsubmit = e => {
+      e.preventDefault();
+      if (registerName(document.getElementById('username').value)){
+        document.body.classList.remove('lock');
+        renderGrid(); renderSaved();
+      }
+    };
+    document.getElementById('startForm').onsubmit = e => {
+      e.preventDefault();
+      if(registerName(document.getElementById('startName').value)){
+        document.body.classList.remove('lock');
+        bootstrap.Modal.getInstance(document.getElementById('startModal')).hide();
+        renderGrid(); renderSaved();
+      }
+    };
+
+    // Admin prompt
+    document.getElementById('gotoAdmin').addEventListener('click', e => {
+      e.preventDefault();
+      const code = prompt('Admin code:');
+      if(code && code.trim()===ADMIN_CODE){ localStorage.setItem(ADMIN_KEY,'1'); window.location.href='admin.html'; }
+      else alert('Onjuiste code.');
+    });
+
+    // Live sync met admin
+    window.addEventListener('storage', (e) => {
+      if ([CLAIMS_KEY, TEAMS_KEY, 'ptb_ping'].includes(e.key)){
+        refreshFromStorage();
+        renderGrid();
+      }
+    });
+
+    // Init
+    if(!state.currentUser){
+      document.body.classList.add('lock');
+      new bootstrap.Modal(document.getElementById('startModal')).show();
+    }
+    renderGrid(); renderSaved();
+  </script>
+</body>
+</html>
