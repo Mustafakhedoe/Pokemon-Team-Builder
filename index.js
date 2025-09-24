@@ -16,12 +16,37 @@ const art = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/spri
 
 const BASE_GEN1 = Array.from({ length: 151 }, (_, i) => i + 1);
 const EXTRA_INSERTS = [
-    { id: 172, position: 'before', ref: 25 },
-    { id: 979, position: 'after',  ref: 57 },
-    { id: 242, position: 'after',  ref: 113 },
-    { id: 196, position: 'after', ref: 136 }, { id: 197, position: 'after', ref: 196 },
-    { id: 470, position: 'after', ref: 197 }, { id: 471, position: 'after', ref: 470 },
-    { id: 700, position: 'after', ref: 471 },
+    { id: 172, position: 'before', ref: 25 },   // Pichu voor Pikachu
+    { id: 169, position: 'after', ref: 42 },    // Crobat na Golbat
+    { id: 174, position: 'before', ref: 39 },   // Igglybuff voor Jigglypuff
+    { id: 182, position: 'after', ref: 45 },    // Bellossom na Vileplume
+    { id: 186, position: 'after', ref: 62 },    // Politoed na Poliwrath
+    { id: 199, position: 'after', ref: 80 },    // Slowking na Slowbro
+    { id: 462, position: 'after', ref: 82 },    // Magnezone na Magneton
+    { id: 979, position: 'after', ref: 57 },    // Annihilape na Primeape
+    { id: 208, position: 'after', ref: 95 },    // Steelix na Onix
+    { id: 173, position: 'before', ref: 35 },   // Cleffa voor Clefairy
+    { id: 236, position: 'before', ref: 106 },  // Tyrogue voor Hitmonlee
+    { id: 237, position: 'after', ref: 107 },   // Hitmontop na Hitmonchan
+    { id: 463, position: 'after', ref: 108 },   // Lickilicky na Lickitung
+    { id: 440, position: 'before', ref: 113 },  // Happiny voor Chansey
+    { id: 242, position: 'after', ref: 113 },   // Blissey na Chansey
+    { id: 465, position: 'after', ref: 114 },   // Tangrowth na Tangela
+    { id: 230, position: 'after', ref: 117 },   // Kingdra na Seadra
+    { id: 212, position: 'after', ref: 123 },   // Scizor na Scyther
+    { id: 900, position: 'after', ref: 212 },   // Kleavor na Scizor
+    { id: 238, position: 'before', ref: 124 },  // Smoochum voor Jynx
+    { id: 239, position: 'before', ref: 125 },  // Elekid voor Electabuzz
+    { id: 466, position: 'after', ref: 125 },   // Electivire na Electabuzz
+    { id: 240, position: 'before', ref: 126 },  // Magby voor Magmar
+    { id: 467, position: 'after', ref: 126 },   // Magmortar na Magmar
+    { id: 196, position: 'after', ref: 136 },   // Espeon na Flareon
+    { id: 197, position: 'after', ref: 196 },   // Umbreon na Espeon
+    { id: 470, position: 'after', ref: 197 },   // Leafeon na Umbreon
+    { id: 471, position: 'after', ref: 470 },   // Glaceon na Leafeon
+    { id: 700, position: 'after', ref: 471 },   // Sylveon na Glaceon
+    { id: 233, position: 'after', ref: 137 },   // Porygon2 na Porygon
+    { id: 474, position: 'after', ref: 233 },   // Porygon-Z na Porygon2
 ];
 const GEN1 = (() => {
     const order = [...BASE_GEN1];
