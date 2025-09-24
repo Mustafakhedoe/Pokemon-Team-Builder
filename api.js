@@ -71,3 +71,4 @@ export async function deleteTeam(teamId) {
     if (!user) throw new Error('Niet ingelogd');
     await deleteDoc(doc(db, 'teams', teamId));
 }
+

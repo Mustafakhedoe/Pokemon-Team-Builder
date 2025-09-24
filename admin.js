@@ -174,3 +174,4 @@ if (logoutBtn) logoutBtn.onclick = () => { location.href = 'index.html'; };
 
 const repairBtn = document.getElementById('resetLocal');
 if (repairBtn) repairBtn.onclick = repairTeams;
+

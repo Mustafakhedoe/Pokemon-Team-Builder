@@ -240,3 +240,4 @@ if (!state.currentUser) {
 document.addEventListener('DOMContentLoaded', () => {
     renderGrid(); renderSaved();
 });
+
