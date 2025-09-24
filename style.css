@@ -1,0 +1,17 @@
+:root { --accent: #e60012; }
+body { background: #f8f9fa; }
+.navbar-custom { background: var(--accent); }
+.navbar-custom .navbar-brand, .navbar-custom .nav-link, .navbar-custom .navbar-text { color: #fff; }
+.name-box { background: #fff; border-radius: 999px; padding: .35rem .6rem; }
+.poke-card { cursor: pointer; background: #fff; border: 2px solid transparent; border-radius: .75rem; transition: transform .1s ease, box-shadow .1s ease, border-color .1s ease; }
+.poke-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.poke-card img { width: 100%; height: 96px; object-fit: contain; }
+.poke-card.available { border-color: #e9ecef; }
+.poke-card.mine { border-color: #198754; box-shadow: 0 0 0 4px rgba(25,135,84,.15); }
+.poke-card.taken { border-color: #dc3545; opacity: .7; pointer-events: none; }
+body.lock main { filter: blur(2px); pointer-events: none; user-select: none; }
+
+:root { --accent:#e60012; } body{background:#f8f9fa;}
+.navbar-custom{background:var(--accent);} .navbar-custom .navbar-brand{color:#fff;}
+.table-fixed tbody{display:block;max-height:60vh;overflow:auto;}
+.table-fixed thead,.table-fixed tbody tr{display:table;width:100%;table-layout:fixed;}
