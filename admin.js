@@ -175,3 +175,20 @@ if (logoutBtn) logoutBtn.onclick = () => { location.href = 'index.html'; };
 const repairBtn = document.getElementById('resetLocal');
 if (repairBtn) repairBtn.onclick = repairTeams;
 
+
+
+
+
+// admin.js, in de gate:
+onUserChanged(async (user) => {
+    if (!user) { alert('Inloggen vereist'); location.href = 'index.html'; return; }
+  
+    const localAdmin = localStorage.getItem('ptb_admin') === '1'; // gezet in index.js na de code-prompt
+    if (!(localAdmin || await isAdmin(user.uid))) {
+      alert('Geen admin-rechten');
+      location.href = 'index.html';
+      return;
+    }
+    await render();
+  });
+  
