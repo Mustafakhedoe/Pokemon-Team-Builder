@@ -1,5 +1,6 @@
 // api.js
-import { auth, db } from './firebase.js';
+import { auth } from "./firebase.js";
+
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
